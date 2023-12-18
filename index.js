@@ -32,6 +32,7 @@ async function run() {
     const menuCollection = client.db("bistroBoss").collection("menu");
     const reviewCollection = client.db("bistroBoss").collection("review");
     const cartCollection = client.db("bistroBoss").collection("cart");
+    const userCollection = client.db("bistroBoss").collection("user");
 
     // MongoDB to UI
     // menuCollection
@@ -60,6 +61,12 @@ async function run() {
       const id = req.params.id;
       const query = {_id: new ObjectId(id)};
       const result = await cartCollection.deleteOne(query);
+      res.send(result);
+    })
+    // userCollection
+    app.post('/users',async (req,res)=>{
+      const user = req.body;
+      const result =await userCollection.insertOne(user);
       res.send(result);
     })
 
