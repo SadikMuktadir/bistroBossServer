@@ -10,30 +10,8 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-const verifyToken = (req, res, next) => {
-  if (!req.headers.authorization) {
-    return res.status(401).send({ message: "Unauthorized Access" });
-  }
-  const token = req.headers.authorization.split(" ")[1];
-  jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
-    if (err) {
-      return res.status(401).send({ message: "Unauthorized Access" });
-    }
-    req.decoded = decoded;
-    next();
-  });
-};
 
-// const verifyAdmin = async (req, res, next) => {
-//   const email = req.decoded.email;
-//   const query = {email:email};
-//   const user = await userCollection.findOne(query);
-//   const isAdmin = user?.role === "admin";
-//   if (!isAdmin) {
-//     return res.status(403).send({ message: "Forbidden Access" });
-//   }
-//   next();
-// };
+
 
 // MongoDB Connect
 
@@ -51,6 +29,9 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
+    // middleware
+
+   
     // JSON Token
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -60,7 +41,33 @@ async function run() {
       res.send({ token });
     });
 
-    app.get("/users/admin/:email", async (req, res) => {
+    const verifyToken = (req, res, next) => {
+      if (!req.headers.authorization) {
+        return res.status(401).send({ message: "Unauthorized Access" });
+      }
+      const token = req.headers.authorization.split(" ")[1];
+      jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+        if (err) {
+          return res.status(401).send({ message: "Unauthorized Access" });
+        }
+        req.decoded = decoded;
+        next();
+      });
+    };
+    
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = {email:email};
+      const user = await userCollection.findOne(query);
+      const isAdmin = user?.role === "admin";
+      if (!isAdmin) {
+        return res.status(403).send({ message: "Forbidden Access" });
+      }
+      next();
+    };
+    
+
+    app.get("/users/admin/:email",verifyToken, async (req, res) => {
       const email = req.params.email;
       if (email !== req.decoded.email) {
         return res.status(403).send({ message: "Forbidden Access" });
@@ -123,7 +130,7 @@ async function run() {
       const result = await userCollection.insertOne(user);
       res.send(result);
     });
-    app.get("/users",verifyToken,async (req, res) => {
+    app.get("/users",verifyToken,verifyAdmin,async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
