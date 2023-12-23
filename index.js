@@ -96,6 +96,12 @@ async function run() {
       const result = await menuCollection.insertOne(item);
       res.send(result);
     });
+    app.delete("/menu/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await menuCollection.deleteOne(query);
+      res.send(result);
+    });
     // reviewCollection
     app.get("/review", async (req, res) => {
       const result = await reviewCollection.find().toArray();
