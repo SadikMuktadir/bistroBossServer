@@ -10,9 +10,6 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-
-
-
 // MongoDB Connect
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -31,7 +28,6 @@ async function run() {
   try {
     // middleware
 
-   
     // JSON Token
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -42,32 +38,31 @@ async function run() {
     });
 
     const verifyToken = (req, res, next) => {
-  if (!req.headers.authorization) {
-    return res.status(401).send({ message: "Unauthorized Access" });
-  }
-  const token = req.headers.authorization.split(" ")[1];
-  jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
-    if (err) {
-      return res.status(401).send({ message: "Unauthorized Access" });
-    }
-    req.decoded = decoded;
-    next();
-  });
-};
+      if (!req.headers.authorization) {
+        return res.status(401).send({ message: "Unauthorized Access" });
+      }
+      const token = req.headers.authorization.split(" ")[1];
+      jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+        if (err) {
+          return res.status(401).send({ message: "Unauthorized Access" });
+        }
+        req.decoded = decoded;
+        next();
+      });
+    };
 
-const verifyAdmin = async (req, res, next) => {
-  const email = req.decoded.email;
-  const query = {email:email};
-  const user = await userCollection.findOne(query);
-  const isAdmin = user?.role === "admin";
-  if (!isAdmin) {
-    return res.status(403).send({ message: "Forbidden Access" });
-  }
-  next();
-};
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isAdmin = user?.role === "admin";
+      if (!isAdmin) {
+        return res.status(403).send({ message: "Forbidden Access" });
+      }
+      next();
+    };
 
-
-    app.get("/users/admin/:email",verifyToken, async (req, res) => {
+    app.get("/users/admin/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
       if (email !== req.decoded.email) {
         return res.status(403).send({ message: "Forbidden Access" });
@@ -96,6 +91,11 @@ const verifyAdmin = async (req, res, next) => {
       const result = await menuCollection.find().toArray();
       res.send(result);
     });
+    app.post("/menu", verifyToken, verifyAdmin, async (req, res) => {
+      const item = req.body;
+      const result = await menuCollection.insertOne(item);
+      res.send(result);
+    });
     // reviewCollection
     app.get("/review", async (req, res) => {
       const result = await reviewCollection.find().toArray();
@@ -113,7 +113,7 @@ const verifyAdmin = async (req, res, next) => {
       const result = await cartCollection.find(query).toArray();
       res.send(result);
     });
-    app.delete("/carts/:id",verifyToken, async (req, res) => {
+    app.delete("/carts/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await cartCollection.deleteOne(query);
@@ -130,11 +130,11 @@ const verifyAdmin = async (req, res, next) => {
       const result = await userCollection.insertOne(user);
       res.send(result);
     });
-    app.get("/users",verifyToken,verifyAdmin,async (req, res) => {
+    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
-    app.patch("/users/admin/:id",verifyToken, async (req, res) => {
+    app.patch("/users/admin/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
@@ -146,7 +146,7 @@ const verifyAdmin = async (req, res, next) => {
       res.send(result);
     });
 
-    app.delete("/users/:id",verifyToken, async (req, res) => {
+    app.delete("/users/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await userCollection.deleteOne(query);
@@ -154,10 +154,10 @@ const verifyAdmin = async (req, res, next) => {
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // await client.close();
   }
